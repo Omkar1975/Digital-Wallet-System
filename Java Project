@@ -1,0 +1,155 @@
+
+import java.util.*;
+public class DigitalWalletSystem {
+    private static Map<String, Wallet> wallets = new HashMap<>();
+    private static Scanner sc = new Scanner(System.in);
+
+    public static void main(String[] args) {
+        while (true) {
+            System.out.println("\n1. Create Wallet\n2. Transfer Money\n3. Show History\n4. Exit");
+            System.out.print("Choose option: ");
+            int opt = sc.nextInt();
+            sc.nextLine();
+            switch (opt) {
+                case 1:
+                    createWallet();
+                    break;
+                case 2:
+                    transferMoney();
+                    break;
+                case 3:
+                    showHistory();
+                    break;
+                case 4:
+                    System.exit(0);
+            }
+        }
+    }
+
+    private static void createWallet() {
+        System.out.print("Enter username: ");
+        String username = sc.nextLine();
+        if (wallets.containsKey(username)) {
+            System.out.println("Username already exists.");
+            return;
+        }
+        System.out.print("Set 4-digit PIN: ");
+        String pin = sc.nextLine();
+        System.out.print("Initial deposit: ");
+        double amount = sc.nextDouble();
+        sc.nextLine();
+        wallets.put(username, new Wallet(username, pin, amount));
+        System.out.println("Wallet created.");
+    }
+
+    private static void transferMoney() {
+        System.out.print("Your username: ");
+        String fromUser = sc.nextLine();
+        Wallet fromWallet = wallets.get(fromUser);
+        if (fromWallet == null) {
+            System.out.println("Sender wallet not found.");
+            return;
+        }
+        System.out.print("Recipient username: ");
+        String toUser = sc.nextLine();
+        Wallet toWallet = wallets.get(toUser);
+        if (toWallet == null) {
+            System.out.println("Recipient wallet not found.");
+            return;
+        }
+        System.out.print("Amount to send: ");
+        double amount = sc.nextDouble();
+        sc.nextLine();
+        System.out.print("Enter your 4-digit PIN: ");
+        String pin = sc.nextLine();
+        if (fromWallet.send(amount, toUser, pin)) {
+            toWallet.receive(amount, fromUser);
+            System.out.println("Transfer successful.");
+        }
+    }
+
+    private static void showHistory() {
+        System.out.print("Enter username: ");
+        String username = sc.nextLine();
+        Wallet wallet = wallets.get(username);
+        if (wallet == null) {
+            System.out.println("Wallet not found.");
+        } else {
+            System.out.println("Transaction history for " + username + ":");
+            wallet.printHistory();
+        }
+    }
+}
+
+class Transaction {
+    Date date;
+    String type; 
+    double amount;
+    String otherParty;
+
+    public Transaction(Date date, String type, double amount, String otherParty) {
+        this.date = date;
+        this.type = type;
+        this.amount = amount;
+        this.otherParty = otherParty;
+    }
+
+    public String toString() {
+        return "[" + date + "] " + type + " " + amount + " with " + otherParty;
+    }
+}
+
+class Wallet {
+    private String username;
+    private double balance;
+    private String pin;
+    private List<Transaction> history = new ArrayList<>();
+
+    public Wallet(String username, String pin, double initialBalance) {
+        this.username = username;
+        this.pin = pin;
+        this.balance = initialBalance;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public double getBalance() {
+        return balance;
+    }
+
+    public boolean verifyPin(String inputPin) {
+        return pin.equals(inputPin);
+    }
+
+    public void receive(double amount, String from) {
+        balance += amount;
+        history.add(new Transaction(new Date(), "RECEIVE", amount, from));
+    }
+
+    public boolean send(double amount, String to, String inputPin) {
+        if (!verifyPin(inputPin)) {
+            System.out.println("Invalid PIN.");
+            return false;
+        }
+        if (amount > balance) {
+            System.out.println("Insufficient balance.");
+            return false;
+        }
+        balance -= amount;
+        history.add(new Transaction(new Date(), "SEND", amount, to));
+        return true;
+    }
+
+    public void printHistory() {
+        if (history.isEmpty()) {
+            System.out.println("No transactions yet.");
+        } else {
+            for (Transaction t : history) {
+                System.out.println(t);
+            }
+        }
+    }
+}
+
